@@ -4,13 +4,18 @@ Project A: Predicting Sentiment from Tweets
 The problem is to determine whether a given Tweet has a positive or negative sentiment.
 This dataset contains 10,000 highly polar Tweets (50% positive and 50% negative).
 '''
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import nltk
 from nltk.corpus import stopwords
 import re
 from nltk.stem import PorterStemmer, WordNetLemmatizer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from gensim.models import Word2Vec
+from sklearn.model_selection import train_test_split
+# Train
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report
 
 # Download NLTK resources
 nltk.download('punkt_tab')      # punkt tokenizer
@@ -24,11 +29,15 @@ extra_stopwords = {'u', 'im', 'rt', 'us', 'like', 'just', 'amp', 'dont', 'get', 
 stop_words.update(extra_stopwords)
 
 # Load and Merge the JSON Files
-json_files = ['twitter_samples/negative_tweets.json', 'twitter_samples/positive_tweets.json']
+negative_tweets = pd.read_json('twitter_samples/negative_tweets.json', lines=True)
+positive_tweets = pd.read_json('twitter_samples/positive_tweets.json', lines=True)
 
-# Merge into a single DataFrame
-dataframes = [pd.read_json(file, lines=True) for file in json_files]
-data = pd.concat(dataframes, ignore_index=True)
+#label the data
+negative_tweets['label'] = 0
+positive_tweets['label'] = 1
+
+# Merge the dataframes
+data = pd.concat([negative_tweets, positive_tweets], ignore_index=True)
 
 # Calculate tweet lengths for distribution analysis
 data['text_length'] = data['text'].apply(lambda x: len(x) if pd.notnull(x) else 0)
@@ -94,6 +103,37 @@ plt.show()
 # Convert tokens to a single string to prepare for vectorization
 data['processed_text'] = data['lemmatized_tokens'].apply(lambda x: ' '.join(x))
 
-
 ### DATA PREPARATION ###
 
+# Feature extraction using TF-IDF
+vectorizer = TfidfVectorizer(max_features=5000)
+X = vectorizer.fit_transform(data['processed_text'])
+y = data['label']
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Print shapes of the splits to confirm
+print("Training set size:", X_train.shape)
+print("Testing set size:", X_test.shape)
+
+
+### MODEL TRAINING ###
+
+# Train the model
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# Make predictions
+y_pred = model.predict(X_test)
+
+# Evaluate the model
+print(f'Accuracy: {accuracy_score(y_test, y_pred)}')
+print(classification_report(y_test, y_pred))
+
+# Example predictions
+new_tweets = ["I love this!", "This is terrible."]
+new_tweets_processed = [clean_text(tweet) for tweet in new_tweets]
+new_tweets_vec = vectorizer.transform(new_tweets_processed)
+predictions = model.predict(new_tweets_vec)
+print("Predictions:", predictions)
