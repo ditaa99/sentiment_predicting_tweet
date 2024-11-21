@@ -4,6 +4,7 @@ Project A: Predicting Sentiment from Tweets
 The problem is to determine whether a given Tweet has a positive or negative sentiment.
 This dataset contains 10,000 highly polar Tweets (50% positive and 50% negative).
 '''
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import nltk
@@ -16,6 +17,11 @@ from sklearn.model_selection import train_test_split
 # Train
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report
+# Evaluate
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import roc_curve, roc_auc_score
+from sklearn.metrics import precision_recall_curve
 
 # Download NLTK resources
 nltk.download('punkt_tab')      # punkt tokenizer
@@ -90,7 +96,7 @@ token_freq = nltk.FreqDist(all_tokens)
 most_common_tokens = token_freq.most_common(10)
 tokens, counts = zip(*most_common_tokens)
 
-# Plot the most common tokens
+# common tokens
 plt.figure(figsize=(10, 6))
 plt.bar(tokens, counts, color='skyblue', edgecolor='black')
 plt.title('Top 10 Most Common Tokens After Cleaning')
@@ -137,3 +143,45 @@ new_tweets_processed = [clean_text(tweet) for tweet in new_tweets]
 new_tweets_vec = vectorizer.transform(new_tweets_processed)
 predictions = model.predict(new_tweets_vec)
 print("Predictions:", predictions)
+
+
+### PERFORMANCE OF OUR MODEL ###
+
+# Confusion matrix
+cm = confusion_matrix(y_test, y_pred)
+
+# Plot confusion matrix
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Confusion Matrix')
+plt.show()
+
+
+# ROC curve and AUC
+y_pred_prob = model.predict_proba(X_test)[:, 1]
+fpr, tpr, thresholds = roc_curve(y_test, y_pred_prob)
+auc = roc_auc_score(y_test, y_pred_prob)
+
+# Plot ROC curve
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, label=f'AUC = {auc:.2f}')
+plt.plot([0, 1], [0, 1], 'k--')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve')
+plt.legend(loc='lower right')
+plt.show()
+
+
+# Precision-recall curve
+precision, recall, _ = precision_recall_curve(y_test, y_pred_prob)
+
+# Plot precision-recall curve
+plt.figure(figsize=(8, 6))
+plt.plot(recall, precision)
+plt.xlabel('Recall')
+plt.ylabel('Precision')
+plt.title('Precision-Recall Curve')
+plt.show()
