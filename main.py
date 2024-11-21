@@ -3,6 +3,8 @@ Project A: Predicting Sentiment from Tweets
 
 The problem is to determine whether a given Tweet has a positive or negative sentiment.
 This dataset contains 10,000 highly polar Tweets (50% positive and 50% negative).
+
+The dataset is available in the NLTK library and can be imported when running import_dataset.py.
 '''
 
 import pandas as pd
